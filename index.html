@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft UI Game</title>
+    <style>
+        body {
+            margin: 0;
+            background: url('https://preview.redd.it/zd5fb2lzdgca1.png?auto=webp&s=f78f1a8fb44bce030bbad37f944decfb880c4f32') center/cover no-repeat fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            font-family: 'Minecraft', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('https://fonts.cdnfonts.com/css/minecraft-4') format('woff2');
+        }
+
+        .hotbar {
+            display: flex;
+            position: absolute;
+            bottom: 20px;
+            gap: 5px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 5px;
+            border-radius: 5px;
+            border: 2px solid #1eff00b2;
+        }
+
+        .slot,
+        .armor-slot,
+        .second-hand-slot {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #030303;
+            background-color: rgb(255, 255, 255);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .armor-hotbar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 5px;
+            border-radius: 5px;
+            border: 2px solid #1eff00b2;
+        }
+
+        .second-hand-slot {
+            position: absolute;
+            top: 180px;
+            left: 285px;
+            background-color: rgb(255, 255, 255);
+            border-radius: 5px;
+        }
+
+        .character {
+            position: absolute;
+            top: -10px;
+            left: 90px;
+            width: 190px;
+            height: 270px;
+            background: url('fotos/1.jpg') no-repeat center/contain;
+        }
+
+        .item-selection {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #8b8b8b;
+            border: 3px solid #5a5a5a;
+            padding: 15px;
+            display: none;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: 300px;
+            max-height: 60vh;
+            overflow-y: auto;
+            z-index: 10;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .item-option {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid #5a5a5a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .item-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .item-option img {
+            width: 32px;
+            height: 32px;
+            image-rendering: pixelated;
+        }
+
+        .item-name {
+            font-size: 8px;
+            color: white;
+            text-align: center;
+            margin-top: 2px;
+            text-shadow: 1px 1px 1px black;
+        }
+
+        .buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background: #ff0000;
+            color: white;
+            border: 2px solid #000000;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-family: 'Minecraft', sans-serif;
+            font-size: 12px;
+        }
+
+        button:hover {
+            background: #6a6a6a;
+        }
+
+        .selected-item {
+            width: 32px;
+            height: 32px;
+            image-rendering: pixelated;
+        }
+
+        @media (max-width: 600px) {
+
+            .slot,
+            .armor-slot,
+            .second-hand-slot {
+                width: 35px;
+                height: 35px;
+            }
+
+            .item-option {
+                width: 40px;
+                height: 40px;
+            }
+
+            .item-option img {
+                width: 28px;
+                height: 28px;
+            }
+
+            .item-selection {
+                width: 250px;
+            }
+
+            .buttons {
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="armor-hotbar" id="armor-hotbar"></div>
+    <div class="character"></div>
+    <div class="second-hand-slot" onclick="openItemSelection('secondHand', 0)">+</div>
+    <div class="hotbar" id="main-hotbar"></div>
+
+    <div class="buttons">
+        <button onclick="resetHotbar('main')">Reset Hotbar</button>
+        <button onclick="resetHotbar('armor')">Reset Armadura</button>
+        <button onclick="resetHotbar('secondHand')">Reset Mão Sec.</button>
+    </div>
+
+    <div class="item-selection" id="item-selection"></div>
+
+    <script>
+        // Mapeamento de imagens (todas do Minecraft)
+        const imageMap = {
+            // Ferramentas
+            "Espada de Madeira": "https://mc.nerothe.com/img/1.21.4/minecraft_wooden_sword.png",
+            "Espada de Pedra": "https://mc.nerothe.com/img/1.21.4/minecraft_stone_sword.png",
+            "Espada de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_sword.png",
+            "Espada de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_sword.png",
+            "Espada de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_sword.png",
+            "Espada de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_sword.png",
+
+            "Picareta de Madeira": "https://mc.nerothe.com/img/1.21.4/minecraft_wooden_pickaxe.png",
+            "Picareta de Pedra": "https://mc.nerothe.com/img/1.21.4/minecraft_stone_pickaxe.png",
+            "Picareta de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_pickaxe.png",
+            "Picareta de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_pickaxe.png",
+            "Picareta de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_pickaxe.png",
+            "Picareta de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_pickaxe.png",
+
+            "Machado de Madeira": "https://mc.nerothe.com/img/1.21.4/minecraft_wooden_axe.png",
+            "Machado de Pedra": "https://mc.nerothe.com/img/1.21.4/minecraft_stone_axe.png",
+            "Machado de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_axe.png",
+            "Machado de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_axe.png",
+            "Machado de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_axe.png",
+            "Machado de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_axe.png",
+
+            "Pá de Madeira": "https://mc.nerothe.com/img/1.21.4/minecraft_wooden_shovel.png",
+            "Pá de Pedra": "https://mc.nerothe.com/img/1.21.4/minecraft_stone_shovel.png",
+            "Pá de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_shovel.png",
+            "Pá de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_shovel.png",
+            "Pá de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_shovel.png",
+            "Pá de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_shovel.png",
+
+            "Enxada de Madeira": "https://mc.nerothe.com/img/1.21.4/minecraft_wooden_hoe.png",
+            "Enxada de Pedra": "https://mc.nerothe.com/img/1.21.4/minecraft_stone_hoe.png",
+            "Enxada de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_hoe.png",
+            "Enxada de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_hoe.png",
+            "Enxada de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_hoe.png",
+            "Enxada de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_hoe.png",
+
+            // Armas secundárias
+            "Arco": "https://mc.nerothe.com/img/1.21.4/minecraft_bow.png",
+            "Besta": "https://mc.nerothe.com/img/1.21.4/minecraft_crossbow.png",
+            "Tridente": "https://mc.nerothe.com/img/1.21.4/minecraft_trident.png",
+
+            // Comidas
+            "Carne de Vaca Assada": "https://mc.nerothe.com/img/1.21.4/minecraft_cooked_beef.png",
+            "Carne de Porco Assada": "https://mc.nerothe.com/img/1.21.4/minecraft_cooked_porkchop.png",
+            "Carne de Ovelha Assada": "https://mc.nerothe.com/img/1.21.4/minecraft_cooked_mutton.png",
+            "Carne de Frango Assada": "https://mc.nerothe.com/img/1.21.4/minecraft_cooked_chicken.png",
+            "Maçã Dourada": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_apple.png",
+            "Cenoura Dourada": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_carrot.png",
+            "Pão": "https://mc.nerothe.com/img/1.21.4/minecraft_bread.png",
+
+            // Baldes
+            "Balde de Água": "https://mc.nerothe.com/img/1.21.4/minecraft_water_bucket.png",
+            "Balde de Lava": "https://mc.nerothe.com/img/1.21.4/minecraft_lava_bucket.png",
+            "Balde Vazio": "https://mc.nerothe.com/img/1.21.4/minecraft_bucket.png",
+
+            // Blocos
+            "Blocos de Pedra": "https://mc.nerothe.com/img/1.21.4/minecraft_cobblestone.png",
+            "Blocos de Madeira": "https://mc.nerothe.com/img/1.21.4/minecraft_oak_log.png",
+            "Blocos de Trabalho": "https://mc.nerothe.com/img/1.21.4/minecraft_crafting_table.png",
+            "Blocos de Terra": "https://mc.nerothe.com/img/1.21.4/minecraft_dirt.png",
+
+            // Poções
+            "Poção de Velocidade": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDvDeNml3W8NmsaWuDn3NVkt3TkmaNBAAbww&s",
+            "Poção de Força": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFm9qE7ia_fMo279fdw4cxNDeYrjpGmfVNDA&s",
+            "Poção de Regeneração": "https://www.alphr.com/wp-content/uploads/2023/01/pink-potion.png",
+            "Poção de Visão Noturna": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZ3LWpayleX2qtKL1iCPyvqwNZhuZZhkRPiw&s",
+
+            // Armaduras
+            "Capacete de Couro": "https://mc.nerothe.com/img/1.21.4/minecraft_leather_helmet.png",
+            "Capacete de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_helmet.png",
+            "Capacete de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_helmet.png",
+            "Capacete de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_helmet.png",
+            "Capacete de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_helmet.png",
+
+            "Peitoral de Couro": "https://mc.nerothe.com/img/1.21.4/minecraft_leather_chestplate.png",
+            "Peitoral de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_chestplate.png",
+            "Peitoral de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_chestplate.png",
+            "Peitoral de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_chestplate.png",
+            "Peitoral de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_chestplate.png",
+
+            "Calça de Couro": "https://mc.nerothe.com/img/1.21.4/minecraft_leather_leggings.png",
+            "Calça de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_leggings.png",
+            "Calça de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_leggings.png",
+            "Calça de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_leggings.png",
+            "Calça de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_leggings.png",
+
+            "Bota de Couro": "https://mc.nerothe.com/img/1.21.4/minecraft_leather_boots.png",
+            "Bota de Ferro": "https://mc.nerothe.com/img/1.21.4/minecraft_iron_boots.png",
+            "Bota de Ouro": "https://mc.nerothe.com/img/1.21.4/minecraft_golden_boots.png",
+            "Bota de Diamante": "https://mc.nerothe.com/img/1.21.4/minecraft_diamond_boots.png",
+            "Bota de Netherite": "https://mc.nerothe.com/img/1.21.4/minecraft_netherite_boots.png",
+
+            // Mão secundária
+            "Escudo": "https://mc.nerothe.com/img/1.21.4/minecraft_shield.png",
+            "Foguete": "https://mc.nerothe.com/img/1.21.4/minecraft_firework_rocket.png",
+            "Totem da Imortalidade": "https://mc.nerothe.com/img/1.21.4/minecraft_totem_of_undying.png",
+            "Tocha": "https://mc.nerothe.com/img/1.21.4/minecraft_torch.png"
+        };
+
+        const itemCategories = [
+            ["Espada de Madeira", "Espada de Pedra", "Espada de Ferro", "Espada de Ouro", "Espada de Diamante", "Espada de Netherite"],
+            ["Picareta de Madeira", "Picareta de Pedra", "Picareta de Ferro", "Picareta de Ouro", "Picareta de Diamante", "Picareta de Netherite"],
+            ["Machado de Madeira", "Machado de Pedra", "Machado de Ferro", "Machado de Ouro", "Machado de Diamante", "Machado de Netherite"],
+            ["Pá de Madeira", "Pá de Pedra", "Pá de Ferro", "Pá de Ouro", "Pá de Diamante", "Pá de Netherite"],
+            ["Enxada de Madeira", "Enxada de Pedra", "Enxada de Ferro", "Enxada de Ouro", "Enxada de Diamante", "Enxada de Netherite"],
+            ["Arco", "Besta", "Tridente"],
+            ["Carne de Vaca Assada", "Carne de Porco Assada", "Carne de Ovelha Assada", "Carne de Frango Assada", "Maçã Dourada", "Cenoura Dourada", "Pão"],
+            ["Balde de Água", "Balde de Lava", "Balde Vazio"],
+            ["Blocos de Pedra", "Blocos de Madeira", "Blocos de Trabalho", "Blocos de Terra"],
+            ["Poção de Velocidade", "Poção de Força", "Poção de Regeneração", "Poção de Visão Noturna"]
+        ];
+
+        const armorCategories = [
+            ["Capacete de Couro", "Capacete de Ferro", "Capacete de Ouro", "Capacete de Diamante", "Capacete de Netherite"],
+            ["Peitoral de Couro", "Peitoral de Ferro", "Peitoral de Ouro", "Peitoral de Diamante", "Peitoral de Netherite"],
+            ["Calça de Couro", "Calça de Ferro", "Calça de Ouro", "Calça de Diamante", "Calça de Netherite"],
+            ["Bota de Couro", "Bota de Ferro", "Bota de Ouro", "Bota de Diamante", "Bota de Netherite"]
+        ];
+
+        const secondHandItems = ["Escudo", "Foguete", "Totem da Imortalidade", "Tocha"];
+
+        // Estado do jogo
+        const gameState = {
+            mainHotbar: Array(10).fill(null),
+            armorHotbar: Array(4).fill(null),
+            offHand: null
+        };
+
+        function createHotbar(type, count, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const slot = document.createElement("div");
+                slot.className = type === 'main' ? "slot" : "armor-slot";
+
+                // Verifica se já tem item selecionado
+                const currentItem = type === 'main' ? gameState.mainHotbar[i] :
+                    type === 'armor' ? gameState.armorHotbar[i] : null;
+
+                if (currentItem && imageMap[currentItem]) {
+                    slot.innerHTML = `<img src="${imageMap[currentItem]}" class="selected-item" title="${currentItem}">`;
+                } else if (currentItem) {
+                    slot.textContent = currentItem;
+                } else {
+                    slot.textContent = "+";
+                }
+
+                slot.onclick = () => openItemSelection(type, i);
+                container.appendChild(slot);
+            }
+        }
+
+        function openItemSelection(type, index) {
+            const selection = document.getElementById("item-selection");
+            selection.innerHTML = "";
+            selection.dataset.type = type;
+            selection.dataset.index = index;
+
+            let options = [];
+            if (type === 'main') {
+                options = itemCategories[index] || [];
+            } else if (type === 'armor') {
+                options = armorCategories[index] || [];
+            } else if (type === 'secondHand') {
+                options = secondHandItems;
+            }
+
+            options.forEach(item => {
+                const imgSrc = imageMap[item];
+                const option = document.createElement("div");
+                option.className = "item-option";
+
+                if (imgSrc) {
+                    option.innerHTML = `
+            <img src="${imgSrc}" alt="${item}">
+            <div class="item-name">${item}</div>
+          `;
+                } else {
+                    option.innerHTML = `<div class="item-name">${item}</div>`;
+                }
+
+                option.onclick = () => selectItem(item);
+                selection.appendChild(option);
+            });
+
+            selection.style.display = "flex";
+        }
+
+        function selectItem(itemName) {
+            const selection = document.getElementById("item-selection");
+            const type = selection.dataset.type;
+            const index = selection.dataset.index;
+
+            if (type === 'main') {
+                gameState.mainHotbar[index] = itemName;
+            } else if (type === 'armor') {
+                gameState.armorHotbar[index] = itemName;
+            } else if (type === 'secondHand') {
+                gameState.offHand = itemName;
+            }
+
+            updateUI();
+            selection.style.display = "none";
+        }
+
+        function updateUI() {
+            createHotbar("main", 10, "main-hotbar");
+            createHotbar("armor", 4, "armor-hotbar");
+
+            const offHandSlot = document.querySelector(".second-hand-slot");
+            if (gameState.offHand && imageMap[gameState.offHand]) {
+                offHandSlot.innerHTML = `<img src="${imageMap[gameState.offHand]}" class="selected-item" title="${gameState.offHand}">`;
+            } else if (gameState.offHand) {
+                offHandSlot.textContent = gameState.offHand;
+            } else {
+                offHandSlot.textContent = "+";
+            }
+        }
+
+        function resetHotbar(type) {
+            if (type === 'main') {
+                gameState.mainHotbar = Array(10).fill(null);
+            } else if (type === 'armor') {
+                gameState.armorHotbar = Array(4).fill(null);
+            } else if (type === 'secondHand') {
+                gameState.offHand = null;
+            }
+            updateUI();
+        }
+
+        // Fechar menu de seleção ao clicar fora
+        document.addEventListener('click', (e) => {
+            const selection = document.getElementById("item-selection");
+            if (selection.style.display === "flex" && !selection.contains(e.target)) {
+                const isSlot = e.target.className.includes('slot') ||
+                    e.target.parentElement.className.includes('slot');
+                if (!isSlot) {
+                    selection.style.display = "none";
+                }
+            }
+        });
+
+        // Inicializar hotbars
+        updateUI();
+    </script>
+</body>
+
+</html>
